@@ -45,17 +45,3 @@ int main() {
 
   return 0;
 }
-
-/*
-Output:
-Match: true
-
-Search[0]: 11de
-Search[1]: 11df
-Search[2]: 11e0
-Search[3]: 11e9
-
-Search: expected total 1, peek 0: 11d7
-
-oph/sigexpr: unexpected search result size: expected(2), result(1)
-*/
