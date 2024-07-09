@@ -63,7 +63,7 @@ class SigExpr {
 
     auto result = Search(buffer, base_addr);
     if (result.size() != total) {
-      throw std::runtime_error(std::format("oph/sigexpr: unexpected search result size: expected{}, result{}", total, result.size()));
+      throw std::runtime_error(std::format("oph/sigexpr: unexpected search result size: expected({}), result({})", total, result.size()));
     }
     return result[peek];
   }
