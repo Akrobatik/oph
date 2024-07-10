@@ -146,35 +146,21 @@ class SigExpr {
 
 static inline SigExpr operator""_sig(const char* str, size_t size) {
   std::string expr;
-  expr.resize(size * 3 + 2);
-  expr[size * 3] = '0';
-  expr[size * 3 + 1] = '0';
-
-  for (size_t i = 0; i < size; i++) {
-    expr[i * 3] = kHexTable[str[i] >> 4];
-    expr[i * 3 + 1] = kHexTable[str[i] & 0x0f];
-    expr[i * 3 + 2] = ' ';
+  if (size > 0) {
+    expr.resize(size * 3 - 1);
+    expr[0] = kHexTable[str[0] >> 4];
+    expr[1] = kHexTable[str[0] & 0x0f];
+    for (size_t i = 1; i < size; i++) {
+      expr[i * 3 - 1] = ' ';
+      expr[i * 3] = kHexTable[str[i] >> 4];
+      expr[i * 3 + 1] = kHexTable[str[i] & 0x0f];
+    }
   }
 
   return SigExpr(expr);
 }
 
 static inline SigExpr operator""_sig(const wchar_t* str, size_t size) {
-  std::string expr;
-  expr.resize(size * 6 + 5);
-  expr[size * 6] = '0';
-  expr[size * 6 + 1] = '0';
-  expr[size * 6 + 2] = ' ';
-  expr[size * 6 + 3] = '0';
-  expr[size * 6 + 4] = '0';
-
-  const char* ptr = (const char*)str;
-  for (size_t i = 0; i < size * 2; i++) {
-    expr[i * 3] = kHexTable[ptr[i] >> 4];
-    expr[i * 3 + 1] = kHexTable[ptr[i] & 0x0f];
-    expr[i * 3 + 2] = ' ';
-  }
-
-  return SigExpr(expr);
+  return operator""_sig((const char*)str, size * 2);
 }
 }  // namespace oph
