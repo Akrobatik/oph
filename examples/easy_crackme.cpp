@@ -1,3 +1,7 @@
+// Easy_CrackMe.exe used in this code is in the following homepage
+// http://reversing.kr/challenge.php
+// Easy Crack
+
 #include <iostream>
 
 #include "oph/patcher.hpp"
