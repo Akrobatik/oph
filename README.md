@@ -8,7 +8,7 @@
 
 ## Examples
 
-### Signature scan
+> **Signature scan**
 
 https://github.com/Akrobatik/oph/blob/b1f31e19d419e7655c7386a8c03bea464348c264/examples/sigexpr.cpp#L7-L47
 
@@ -24,8 +24,9 @@ Search: expected total 1, peek 0: 11d7
 
 oph/sigexpr: unexpected search result size: expected(2), result(1)
 ```
+<br/>
 
-### Signature Scan (String)
+> **Signature Scan (String)**
 
 https://github.com/Akrobatik/oph/blob/50438d37586b976c76d05335a4bc782925dd778b/examples/sigexpr_string.cpp#L7-L22
 
