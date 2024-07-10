@@ -42,6 +42,14 @@ class Patcher {
     formatter_->WriteLineBreak();
   }
 
+  void WriteModule(const std::string& name) {
+    if (dump_store_.Contains(name)) {
+      formatter_->WriteModule(name, dump_store_.GetModule(name).GetVersion());
+    } else {
+      formatter_->WriteModule(name, "ERROR");
+    }
+  }
+
   void WriteComment(std::string_view comment) {
     formatter_->WriteComment(comment);
   }

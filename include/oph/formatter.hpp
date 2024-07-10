@@ -21,6 +21,7 @@ class Formatter {
   }
 
   virtual void WriteComment(std::string_view comment) = 0;
+  virtual void WriteModule(std::string_view name, std::string_view version) = 0;
   virtual void WriteOffset(std::string_view name) = 0;
   virtual void WriteBytes(std::string_view name) = 0;
 
@@ -48,6 +49,10 @@ class CppFormatter : public Formatter {
  public:
   virtual void WriteComment(std::string_view comment) {
     fmt::format_to(std::back_inserter(inner_format_), "// {}\n", comment);
+  }
+
+  virtual void WriteModule(std::string_view name, std::string_view version) {
+    fmt::format_to(std::back_inserter(inner_format_), "/* {} - {} ver */\n", name, version);
   }
 
   virtual void WriteOffset(std::string_view name) {

@@ -57,6 +57,11 @@ class Module {
 
   std::span<const uint8_t> GetDump() const { return dump_; }
 
+  bool Contains(const std::string& section_name) const {
+    auto iter = sections_.find(section_name);
+    return iter != sections_.end();
+  }
+
   const Section& GetSection(const std::string& section_name) const {
     auto iter = sections_.find(section_name);
     if (iter == sections_.end()) {
@@ -136,6 +141,16 @@ class DumpStore {
       }
       CloseHandle(process_handle);
     }
+  }
+
+  bool Contains(const std::string& module_name) const {
+    auto iter = modules_.find(module_name);
+    return iter != modules_.end();
+  }
+
+  bool Contains(const std::string& module_name, const std::string& section_name) const {
+    auto iter = modules_.find(module_name);
+    return iter != modules_.end() ? iter->second.Contains(section_name) : false;
   }
 
   const Module& GetModule(const std::string& module_name) const {
