@@ -171,4 +171,11 @@ class Decoder {
 
   ZydisDecoder decoder_;
 };
+
+template <ZydisMnemonic Mnemonic>
+struct equal_mnemonic {
+  constexpr bool operator()(const ZydisDecodedInstruction& instruction) const {
+    return instruction.mnemonic == Mnemonic;
+  }
+};
 }  // namespace oph
