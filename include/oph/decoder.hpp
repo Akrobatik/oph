@@ -1,6 +1,7 @@
 #pragma once
 
 // C++ standard
+#include <concepts>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -107,7 +108,7 @@ class Decoder {
   }
 
   std::optional<uint64_t> CalcBackAddr(std::span<const uint8_t> buffer, uint64_t from, size_t min_bytes_size) {
-    if (buffer.begin() >= buffer.end()) {
+    if (buffer.begin() >= buffer.end() || buffer.size() <= from) {
       return std::nullopt;
     }
 
@@ -119,6 +120,43 @@ class Decoder {
       if (to - from >= min_bytes_size) {
         return to;
       }
+    }
+    return std::nullopt;
+  }
+
+  template <typename Pred>
+    requires std::is_invocable_v<Pred, const ZydisDecodedInstruction&>
+  std::optional<uint64_t> FindIf(std::span<const uint8_t> buffer, uint64_t from, Pred&& pred) {
+    if (buffer.begin() >= buffer.end() || buffer.size() <= from) {
+      return std::nullopt;
+    }
+
+    ZydisDecodedInstruction instruction;
+    uint64_t to = from;
+    while (ZYAN_SUCCESS(DecodeInstruction(buffer.data() + to, buffer.size() - to, &instruction))) {
+      if (std::invoke(std::forward<Pred>(pred), instruction)) {
+        return to;
+      }
+      to += instruction.length;
+    }
+    return std::nullopt;
+  }
+
+  template <typename Pred>
+    requires std::is_invocable_v<Pred, const ZydisDecodedInstruction&, const ZydisDecodedOperand[ZYDIS_MAX_OPERAND_COUNT]>
+  std::optional<uint64_t> FindIf(std::span<const uint8_t> buffer, uint64_t from, Pred&& pred) {
+    if (buffer.begin() >= buffer.end()) {
+      return std::nullopt;
+    }
+
+    ZydisDecodedInstruction instruction;
+    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+    uint64_t to = from;
+    while (ZYAN_SUCCESS(DecodeFull(buffer.data() + to, buffer.size() - to, &instruction, operands))) {
+      if (std::invoke(std::forward<Pred>(pred), instruction, operands)) {
+        return to;
+      }
+      to += instruction.length;
     }
     return std::nullopt;
   }
