@@ -124,6 +124,49 @@ class Decoder {
     return std::nullopt;
   }
 
+  std::optional<uint64_t> CalcStackFrame(std::span<const uint8_t> buffer, size_t max_instructions = 20) {
+    if (buffer.begin() >= buffer.end()) {
+      return std::nullopt;
+    }
+
+    ZydisRegister sp_register;
+    size_t stack_width;
+    if (decoder_.stack_width == ZYDIS_STACK_WIDTH_64) {
+      sp_register = ZYDIS_REGISTER_RSP;
+      stack_width = 8;
+    } else if (decoder_.stack_width == ZYDIS_STACK_WIDTH_32) {
+      sp_register = ZYDIS_REGISTER_ESP;
+      stack_width = 4;
+    } else {
+      sp_register = ZYDIS_REGISTER_SP;
+      stack_width = 2;
+    }
+
+    ZydisDecodedInstruction instruction;
+    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+    uint64_t stack_size = 0;
+    uint64_t offset = 0;
+    for (size_t i = 0; i < max_instructions; i++) {
+      if (ZYAN_FAILED(DecodeFull(buffer.data() + offset, buffer.size() - offset, &instruction, operands))) {
+        break;
+      }
+      offset += instruction.length;
+
+      if (instruction.mnemonic == ZYDIS_MNEMONIC_SUB &&
+          instruction.operand_count == 3 &&
+          operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
+          operands[0].reg.value == sp_register &&
+          operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+        return stack_size + operands[1].imm.value.s;
+      }
+
+      if (instruction.mnemonic == ZYDIS_MNEMONIC_PUSH) {
+        stack_size += stack_width;
+      }
+    }
+    return std::nullopt;
+  }
+
   template <typename Pred>
     requires std::is_invocable_v<Pred, const ZydisDecodedInstruction&> &&
              std::is_same_v<std::invoke_result_t<Pred, const ZydisDecodedInstruction&>, bool>
