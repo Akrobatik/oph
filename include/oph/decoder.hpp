@@ -144,7 +144,8 @@ class Decoder {
 
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    uint64_t stack_size = 0;
+    uint64_t stack_size_prol = 0;
+    uint64_t stack_size_epil = 0;
     uint64_t offset = 0;
     for (size_t i = 0; i < max_instructions; i++) {
       if (ZYAN_FAILED(DecodeFull(buffer.data() + offset, buffer.size() - offset, &instruction, operands))) {
@@ -152,16 +153,28 @@ class Decoder {
       }
       offset += instruction.length;
 
+      if (instruction.mnemonic == ZYDIS_MNEMONIC_RET) {
+        return stack_size_epil;
+      }
+
       if (instruction.mnemonic == ZYDIS_MNEMONIC_SUB &&
           instruction.operand_count == 3 &&
           operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
           operands[0].reg.value == sp_register &&
           operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
-        return stack_size + operands[1].imm.value.s;
+        return stack_size_prol + operands[1].imm.value.s;
       }
 
-      if (instruction.mnemonic == ZYDIS_MNEMONIC_PUSH) {
-        stack_size += stack_width;
+      if (instruction.mnemonic == ZYDIS_MNEMONIC_ADD &&
+          instruction.operand_count == 3 &&
+          operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
+          operands[0].reg.value == sp_register &&
+          operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+        stack_size_epil += operands[1].imm.value.s;
+      } else if (instruction.mnemonic == ZYDIS_MNEMONIC_POP) {
+        stack_size_epil += stack_width;
+      } else if (instruction.mnemonic == ZYDIS_MNEMONIC_PUSH) {
+        stack_size_prol += stack_width;
       }
     }
     return std::nullopt;
