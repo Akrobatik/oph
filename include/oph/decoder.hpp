@@ -125,7 +125,8 @@ class Decoder {
   }
 
   template <typename Pred>
-    requires std::is_invocable_v<Pred, const ZydisDecodedInstruction&>
+    requires std::is_invocable_v<Pred, const ZydisDecodedInstruction&> &&
+             std::is_same_v<std::invoke_result_t<Pred, const ZydisDecodedInstruction&>, bool>
   std::optional<uint64_t> FindIf(std::span<const uint8_t> buffer, uint64_t from, Pred&& pred) {
     if (buffer.begin() >= buffer.end() || buffer.size() <= from) {
       return std::nullopt;
@@ -143,7 +144,8 @@ class Decoder {
   }
 
   template <typename Pred>
-    requires std::is_invocable_v<Pred, const ZydisDecodedInstruction&, const ZydisDecodedOperand[ZYDIS_MAX_OPERAND_COUNT]>
+    requires std::is_invocable_v<Pred, const ZydisDecodedInstruction&, const ZydisDecodedOperand[ZYDIS_MAX_OPERAND_COUNT]> &&
+             std::is_same_v<std::invoke_result_t<Pred, const ZydisDecodedInstruction&, const ZydisDecodedOperand[ZYDIS_MAX_OPERAND_COUNT]>, bool>
   std::optional<uint64_t> FindIf(std::span<const uint8_t> buffer, uint64_t from, Pred&& pred) {
     if (buffer.begin() >= buffer.end()) {
       return std::nullopt;
