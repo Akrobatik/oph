@@ -24,11 +24,9 @@ class Formatter {
   virtual void WriteComment(std::string_view comment) = 0;
   virtual void WriteModule(std::string_view name, std::string_view version) = 0;
   virtual void WriteOffset(std::string_view name) = 0;
-  virtual void WriteOffsets(std::string_view name) = 0;
   virtual void WriteBytes(std::string_view name) = 0;
 
   virtual std::string MakeOffset(uint64_t value) const = 0;
-  virtual std::string MakeOffsets(std::span<const uint64_t> value) const = 0;
   virtual std::string MakeBytes(std::span<const uint8_t> value) const = 0;
 
   void Export(std::ostream& os, const std::vector<std::string>& args) {
@@ -62,20 +60,12 @@ class CppFormatter : public Formatter {
     fmt::format_to(std::back_inserter(inner_format_), "constexpr uintptr_t {} = {{}};\n", name);
   }
 
-  virtual void WriteOffsets(std::string_view name) {
-    fmt::format_to(std::back_inserter(inner_format_), "constexpr uintptr_t {}[] = {{}};\n", name);
-  }
-
   virtual void WriteBytes(std::string_view name) {
     fmt::format_to(std::back_inserter(inner_format_), "constexpr uint8_t {}[] = {{}};\n", name);
   }
 
   virtual std::string MakeOffset(uint64_t value) const {
     return fmt::format("0x{:X}", value);
-  }
-
-  virtual std::string MakeOffsets(std::span<const uint64_t> value) const {
-    return fmt::format("{{0x{:X}}}", fmt::join(value, ", 0x"));
   }
 
   virtual std::string MakeBytes(std::span<const uint8_t> value) const {

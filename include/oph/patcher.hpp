@@ -72,20 +72,6 @@ class Patcher {
   }
 
   template <typename ScanFunc>
-    requires std::is_invocable_v<ScanFunc, const DumpStore&> && std::is_same_v<std::invoke_result_t<ScanFunc, const DumpStore&>, std::vector<uint64_t>>
-  Patcher& WriteOffsets(std::string_view name, ScanFunc&& scan_func) {
-    formatter_->WriteOffsets(name);
-
-    size_t scan_index = scan_results_.size();
-    scan_results_.resize(scan_index + 1);
-
-    scan_wg_.Add();
-    scan_pool_.EnqueueDetach(&Patcher::ScanOffsets, this, scan_index, std::forward<ScanFunc>(scan_func));
-
-    return *this;
-  }
-
-  template <typename ScanFunc>
     requires std::is_invocable_v<ScanFunc, const DumpStore&> && std::is_same_v<std::invoke_result_t<ScanFunc, const DumpStore&>, std::vector<uint8_t>>
   Patcher& WriteBytes(std::string_view name, ScanFunc&& scan_func) {
     formatter_->WriteBytes(name);
@@ -137,15 +123,6 @@ class Patcher {
   void ScanOffset(size_t scan_index, std::function<uint64_t(const DumpStore&)>&& scan_func) {
     try {
       scan_results_[scan_index] = formatter_->MakeOffset(scan_func(dump_store_));
-    } catch (...) {
-      scan_results_[scan_index] = "ERROR";
-    }
-    scan_wg_.Done();
-  }
-
-  void ScanOffsets(size_t scan_index, std::function<std::vector<uint64_t>(const DumpStore&)>&& scan_func) {
-    try {
-      scan_results_[scan_index] = formatter_->MakeOffsets(scan_func(dump_store_));
     } catch (...) {
       scan_results_[scan_index] = "ERROR";
     }
