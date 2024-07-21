@@ -38,44 +38,65 @@ class Patcher {
     dump_store_.DumpModule(process_name, module_names);
   }
 
-  void WriteLineBreak() {
+  Patcher& WriteLineBreak() {
     formatter_->WriteLineBreak();
+    return *this;
   }
 
-  void WriteModule(const std::string& name) {
+  Patcher& WriteModule(const std::string& name) {
     if (dump_store_.Contains(name)) {
       formatter_->WriteModule(name, dump_store_.GetModule(name).GetVersion());
     } else {
       formatter_->WriteModule(name, "ERROR");
     }
+    return *this;
   }
 
-  void WriteComment(std::string_view comment) {
+  Patcher& WriteComment(std::string_view comment) {
     formatter_->WriteComment(comment);
+    return *this;
   }
 
   template <typename ScanFunc>
     requires std::is_invocable_v<ScanFunc, const DumpStore&> && std::is_same_v<std::invoke_result_t<ScanFunc, const DumpStore&>, uint64_t>
-  void WriteOffset(std::string_view name, ScanFunc&& scan_func) {
+  Patcher& WriteOffset(std::string_view name, ScanFunc&& scan_func) {
     formatter_->WriteOffset(name);
 
     size_t scan_index = scan_results_.size();
     scan_results_.resize(scan_index + 1);
 
     scan_wg_.Add();
-    scan_pool_.EnqueueDetach(&Patcher::ScanOffset, this, scan_index, scan_func);
+    scan_pool_.EnqueueDetach(&Patcher::ScanOffset, this, scan_index, std::forward<ScanFunc>(scan_func));
+
+    return *this;
+  }
+
+  template <typename ScanFunc>
+    requires std::is_invocable_v<ScanFunc, const DumpStore&> && std::is_same_v<std::invoke_result_t<ScanFunc, const DumpStore&>, std::vector<uint64_t>>
+  Patcher& WriteOffsets(std::string_view name, ScanFunc&& scan_func) {
+    formatter_->WriteOffsets(name);
+
+    size_t scan_index = scan_results_.size();
+    scan_results_.resize(scan_index + 1);
+
+    scan_wg_.Add();
+    scan_pool_.EnqueueDetach(&Patcher::ScanOffsets, this, scan_index, std::forward<ScanFunc>(scan_func));
+
+    return *this;
   }
 
   template <typename ScanFunc>
     requires std::is_invocable_v<ScanFunc, const DumpStore&> && std::is_same_v<std::invoke_result_t<ScanFunc, const DumpStore&>, std::vector<uint8_t>>
-  void WriteBytes(std::string_view name, ScanFunc&& scan_func) {
+  Patcher& WriteBytes(std::string_view name, ScanFunc&& scan_func) {
     formatter_->WriteBytes(name);
 
     size_t scan_index = scan_results_.size();
     scan_results_.resize(scan_index + 1);
 
     scan_wg_.Add();
-    scan_pool_.EnqueueDetach(&Patcher::ScanBytes, this, scan_index, scan_func);
+    scan_pool_.EnqueueDetach(&Patcher::ScanBytes, this, scan_index, std::forward<ScanFunc>(scan_func));
+
+    return *this;
   }
 
   void Export(std::ostream& os) {
@@ -116,6 +137,15 @@ class Patcher {
   void ScanOffset(size_t scan_index, std::function<uint64_t(const DumpStore&)>&& scan_func) {
     try {
       scan_results_[scan_index] = formatter_->MakeOffset(scan_func(dump_store_));
+    } catch (...) {
+      scan_results_[scan_index] = "ERROR";
+    }
+    scan_wg_.Done();
+  }
+
+  void ScanOffsets(size_t scan_index, std::function<std::vector<uint64_t>(const DumpStore&)>&& scan_func) {
+    try {
+      scan_results_[scan_index] = formatter_->MakeOffsets(scan_func(dump_store_));
     } catch (...) {
       scan_results_[scan_index] = "ERROR";
     }
